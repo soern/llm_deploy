@@ -1,0 +1,28 @@
+services:
+  kyutai-tts-en_fr:
+    build: .
+    image: kyutai-tts-en_fr:local
+    container_name: kyutai-tts-en_fr
+    ports:
+      - "${KYUTAI_PORT:-8009}:8009"
+    ipc: host
+    environment:
+      PORT: 8009
+      DEFAULT_VOICE: ${DEFAULT_VOICE:-developpeuse}
+      KYUTAI_N_Q: ${KYUTAI_N_Q:-32}
+      MAX_BATCH: ${MAX_BATCH:-8}
+      FRENCH_NORMALIZE: ${FRENCH_NORMALIZE:-1}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

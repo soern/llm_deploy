@@ -1,0 +1,38 @@
+services:
+  faster-whisper:
+    build: .
+    image: faster-whisper-large-v3:local
+    container_name: faster-whisper
+    ports:
+      - "${FW_PORT:-8001}:8006"
+    ipc: host
+    environment:
+      # Production (GPU): WHISPER_MODEL_ID=Systran/faster-whisper-large-v3, COMPUTE_TYPE=float16
+      # CPU testing:        WHISPER_MODEL_ID=Systran/faster-whisper-base, COMPUTE_TYPE=int8
+      WHISPER_MODEL_ID: ${WHISPER_MODEL_ID:-Systran/faster-whisper-large-v3}
+      MODEL_DIR: ${MODEL_DIR:-/models/faster-whisper-large-v3}
+      COMPUTE_TYPE: ${COMPUTE_TYPE:-float16}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - model-cache:/models
+    # Uncomment for GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: unless-stopped
+
+networks:
+  default:
+    # Pinned subnet: avoids Docker's auto-allocation landing on 172.17.0.0/16,
+    # which collides with the remote backend LAN (172.17.222.155) and breaks
+    # host routes on startup.
+    ipam:
+      config:
+        - subnet: 172.18.61.0/24
+
+volumes:
+  model-cache:

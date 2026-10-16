@@ -1,0 +1,30 @@
+services:
+  kokoro-tts-de:
+    build: .
+    image: kokoro-tts-german:local
+    container_name: kokoro-tts-de
+    ports:
+      - "${TTS_PORT:-8003}:8000"
+    environment:
+      TTS_MODEL_ID: ${TTS_MODEL_ID:-Godelaune/Kokoro-82M-ONNX-German-Martin}
+      MODEL_DIR: ${MODEL_DIR:-/models/kokoro-de}
+      DEFAULT_LANG: ${DEFAULT_LANG:-de}
+      DEFAULT_VOICE: ${DEFAULT_VOICE:-martin}
+      ORT_PROVIDER: ${ORT_PROVIDER:-cpu}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - model-cache:/models
+    # Uncomment for GPU. Also requires rebuilding the image with
+    # onnxruntime-gpu instead of onnxruntime (see README "CPU vs GPU") -
+    # this compose file alone does not switch that.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  model-cache:

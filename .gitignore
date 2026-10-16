@@ -1,0 +1,14 @@
+# Runtime artifacts
+*.log
+*.pid
+*.pyc
+__pycache__/
+.cache/
+tmp/
+*.egg-info/
+
+# Model weights & large binaries (per-deploy .gitignore may re-include specific files)
+*.gguf
+*.pth
+*.ckpt
+*.safetensors

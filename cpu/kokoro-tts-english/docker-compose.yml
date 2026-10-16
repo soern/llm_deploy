@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  kokoro-tts-en:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nixclaw-kokoro-tts-en
+    ports:
+      - "${TTS_PORT:-8005}:8000"
+    volumes:
+      - model-cache:/models
+    environment:
+      - TTS_MODEL_ID=${TTS_MODEL_ID:-hexgrad/Kokoro-82M}
+      - MODEL_DIR=/models/kokoro-en
+      # KModel()/KPipeline() (kokoro package) download via huggingface_hub,
+      # which caches under HF_HOME by default. Point it at the /models
+      # volume so the ~330MB model + voice packs survive container
+      # restarts/recreation instead of re-downloading from HF every time.
+      - HF_HOME=/models/hf-cache
+      - DEFAULT_LANG=${DEFAULT_LANG:-en}
+      - DEFAULT_VOICE=${DEFAULT_VOICE:-af_heart}
+      - PORT=8000
+      - ORT_PROVIDER=${ORT_PROVIDER:-cpu}
+      - HF_TOKEN=${HF_TOKEN:-}
+    restart: unless-stopped
+    # GPU is optional - uncomment if you have CUDA and built with onnxruntime-gpu
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  model-cache:
+    driver: local

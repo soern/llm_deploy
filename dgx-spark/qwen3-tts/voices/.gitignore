@@ -1,0 +1,6 @@
+# Cloned voices (made by deploy/dgx-spark/qwen3-tts-voice-clone/). Only the bundled
+# public-domain/CC0 voices (French, Spanish) are tracked; personal voice clones stay local.
+*
+!.gitignore
+!developpeuse.safetensors
+!es-villarraza.safetensors

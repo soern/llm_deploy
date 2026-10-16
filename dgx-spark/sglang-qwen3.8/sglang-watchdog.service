@@ -1,0 +1,25 @@
+# systemd unit for watchdog.sh. Install (on the Spark, from this folder):
+#   sed -e "s|@WORK_DIR@|$PWD|" -e "s|@USER@|$USER|" sglang-watchdog.service \
+#     | sudo tee /etc/systemd/system/sglang-watchdog.service >/dev/null
+#   sudo systemctl daemon-reload && sudo systemctl enable --now sglang-watchdog
+#   journalctl -u sglang-watchdog -f
+# Settings: put VAR=value lines (see the top of watchdog.sh) in
+# @WORK_DIR@/watchdog.env; the file is optional.
+
+[Unit]
+Description=Restart the SGLang qwen3.8 container after a crash, OOM kill or hang
+After=docker.service
+Requires=docker.service
+
+[Service]
+User=@USER@
+WorkingDirectory=@WORK_DIR@
+EnvironmentFile=-@WORK_DIR@/watchdog.env
+ExecStart=@WORK_DIR@/watchdog.sh
+Restart=always
+RestartSec=10
+# Must keep running when memory is short - that is when it is needed.
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target

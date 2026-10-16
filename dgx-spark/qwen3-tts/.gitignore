@@ -1,0 +1,3 @@
+.cache/
+.qwen3-tts*.pid
+.qwen3-tts*.log

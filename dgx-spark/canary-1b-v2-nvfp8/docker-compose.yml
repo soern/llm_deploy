@@ -1,0 +1,28 @@
+services:
+  canary-1b-v2:
+    build: .
+    image: canary-1b-v2-nvfp8:local
+    container_name: canary-1b-v2-nvfp8
+    ports:
+      - "8006:8006"
+    ipc: host
+    environment:
+      CANARY_MODEL_ID: ${CANARY_MODEL_ID:-nvidia/canary-1b-v2}
+      CANARY_DEFAULT_LANG: ${CANARY_DEFAULT_LANG:-de}
+      CANARY_FALLBACK_LANG: ${CANARY_FALLBACK_LANG:-en}
+      CANARY_QUANT: ${CANARY_QUANT:-1}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - model-cache:/models
+    # DGX Spark / GB10:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  model-cache:

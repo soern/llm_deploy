@@ -1,0 +1,26 @@
+services:
+  canary-stt:
+    build: .
+    image: canary-1b-flash:local
+    container_name: canary-1b-flash
+    ports:
+      - "${CANARY_PORT:-8006}:8000"
+    ipc: host
+    environment:
+      CANARY_MODEL_ID: ${CANARY_MODEL_ID:-nvidia/canary-1b-flash}
+      CANARY_DEFAULT_LANG: ${CANARY_DEFAULT_LANG:-en}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - model-cache:/models
+    # Uncomment for GPU (also needs the CUDA torch wheel - see README):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  model-cache:

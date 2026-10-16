@@ -1,0 +1,25 @@
+services:
+  kokoro-tts-fr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nixclaw-kokoro-tts-fr
+    ports:
+      - "${TTS_PORT:-8008}:8000"
+    volumes:
+      - model-cache:/models
+    environment:
+      # kokoro's KModel/KPipeline download via huggingface_hub; keep the cache
+      # on the volume so restarts don't re-download the ~330MB model.
+      - HF_HOME=/models/hf-cache
+      - DEFAULT_LANG=fr
+      - DEFAULT_VOICE=${DEFAULT_VOICE:-ff_siwis}
+      # 0 disables french_text.py (numbers/times/ordinals spelled out).
+      - FRENCH_NORMALIZE=${FRENCH_NORMALIZE:-1}
+      - PORT=8000
+      - HF_TOKEN=${HF_TOKEN:-}
+    restart: unless-stopped
+
+volumes:
+  model-cache:
+    driver: local

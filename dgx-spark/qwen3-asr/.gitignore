@@ -1,0 +1,3 @@
+.cache/
+.qwen3-asr*.pid
+.qwen3-asr*.log

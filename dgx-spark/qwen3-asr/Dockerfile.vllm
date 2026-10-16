@@ -1,0 +1,44 @@
+# Qwen3-ASR STT server, vLLM backend (QWEN_ASR_BACKEND=vllm) - DGX Spark.
+#
+# Same server.py as Dockerfile, but the model runs in vLLM: CUDA graphs and
+# a prefix cache instead of plain transformers generate(). GPU only. Built by
+#   QWEN_ASR_BACKEND=vllm ./start.sh
+# The base image carries vLLM 0.14.0, the version qwen-asr 0.0.6 pins for
+# its vLLM model plugin (registered on `import qwen_asr`). Another vLLM image
+# (e.g. one already in use on the Spark) can be tried with
+#   --build-arg BASE_IMAGE=...; qwen-asr's plugin may then fail to import and
+# vLLM's own Qwen3-ASR support (if it has one) is used instead.
+ARG BASE_IMAGE=vllm/vllm-openai:v0.14.0
+FROM ${BASE_IMAGE}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# --no-deps as in Dockerfile: torch, transformers and vLLM stay the image's.
+RUN pip install --no-cache-dir --no-deps "qwen-asr==0.0.6" \
+    && pip install --no-cache-dir \
+        librosa \
+        soundfile \
+        fastapi \
+        "uvicorn[standard]" \
+        python-multipart
+
+COPY nagisa_stub /opt/nagisa_stub
+RUN python3 -c "import nagisa" 2>/dev/null \
+    || cp -r /opt/nagisa_stub/nagisa "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/" \
+    && python3 -c "from qwen_asr import Qwen3ASRModel; print('qwen_asr import ok')"
+
+WORKDIR /app
+COPY server.py ./
+
+ENV PORT=8001 \
+    QWEN_ASR_BACKEND=vllm \
+    VLLM_ENABLE_V1_MULTIPROCESSING=0
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=900s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:${PORT}/health > /dev/null || exit 1
+
+# The vllm-openai image's entrypoint is `vllm serve`.
+ENTRYPOINT []
+CMD ["python3", "server.py"]

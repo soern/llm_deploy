@@ -1,0 +1,27 @@
+services:
+  flux2-klein:
+    build: .
+    image: flux2-klein-9b:local
+    container_name: flux2-klein
+    ports:
+      - "${FLUX_PORT:-8002}:8000"
+    ipc: host
+    environment:
+      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-black-forest-labs/FLUX.2-klein-9B}
+      QUANT_MODE: ${QUANT_MODE:-mxfp8}
+      NUM_INFERENCE_STEPS: ${NUM_INFERENCE_STEPS:-4}
+      GUIDANCE_SCALE: ${GUIDANCE_SCALE:-3.5}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

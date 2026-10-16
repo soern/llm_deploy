@@ -1,0 +1,48 @@
+services:
+  qwen-image-2.1:
+    build: .
+    image: qwen-image-2.1:local
+    container_name: qwen-image-2.1
+    ports:
+      - "${QWEN_IMAGE_PORT:-8002}:8000"   # same host port as flux2-klein (drop-in)
+    ipc: host
+    # This box shares one 128 GB unified pool with sglang/vLLM. When it runs
+    # out, the kernel's global OOM killer picks by oom_score_adj - and on
+    # 2026-09-21 it shot dbus, systemd and the LLM before touching us. A
+    # positive score makes the image server the first victim of its own
+    # appetite instead of taking the machine down with it.
+    oom_score_adj: 500
+    environment:
+      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-Qwen/Qwen-Image-2.1-Turbo}   # Qwen/Qwen-Image-2.1 = base model
+      NUM_INFERENCE_STEPS: ${NUM_INFERENCE_STEPS:-8}   # ignored by Turbo (fixed 8 steps); base model: 40
+      TRUE_CFG_SCALE: ${TRUE_CFG_SCALE:-1.0}
+      TEXT_ENCODER_QUANT: ${TEXT_ENCODER_QUANT:-fp8}   # none = bf16 text encoder
+      MAX_EDIT_LONG_EDGE: ${MAX_EDIT_LONG_EDGE:-2048}
+      ATTENTION_BACKEND: ${ATTENTION_BACKEND:-_native_cudnn}
+      # Size-aware admission: wait for room, 503 only after ADMISSION_WAIT_SECONDS
+      DENOISE_MB_PER_MP: ${DENOISE_MB_PER_MP:-250}   # measured 2026-10-11, see README
+      REF_MB_PER_MP: ${REF_MB_PER_MP:-2400}
+      TILED_VAE_MB: ${TILED_VAE_MB:-1000}
+      ADMISSION_MARGIN_MB: ${ADMISSION_MARGIN_MB:-2000}
+      ADMISSION_WAIT_SECONDS: ${ADMISSION_WAIT_SECONDS:-60}
+      VAE_TILING: ${VAE_TILING:-auto}   # auto | 1 (always tiled) | 0 (never)
+      UNTILED_VAE_MB_PER_MP: ${UNTILED_VAE_MB_PER_MP:-7500}   # decode; measured 7190
+      UNTILED_VAE_ENCODE_MB_PER_MP: ${UNTILED_VAE_ENCODE_MB_PER_MP:-2600}   # measured 2394
+      UNTILED_VAE_MARGIN_MB: ${UNTILED_VAE_MARGIN_MB:-2000}
+      PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # At most two restarts after a crash: an OOM-killed server that comes
+    # straight back reloads ~23 GB into a box that is already short of memory.
+    restart: on-failure:2
+
+volumes:
+  hf-cache:
