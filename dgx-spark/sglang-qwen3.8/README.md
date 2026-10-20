@@ -153,8 +153,9 @@ and read directly (not executed) via `raw.githubusercontent.com`. We did
 
 `chat_template.jinja` is the official `Qwen/Qwen3.8-27B` template
 (downloaded 2026-10-10) with three changes, each marked `nixclaw:` in the
-file. The same file is used by `../vllm-qwen3.8-native` and
-`../vllm-qwen3.8-nvfp4`.
+file. The same file is used by `../vllm-qwen3.8-native`,
+`../vllm-qwen3.8-nvfp4` and `../vllm-qwen3.8-flash-fp4` (Flash-Next ships
+a byte-identical template).
 
 1. **Default `reasoning_effort` is `low`** instead of `xhigh`: the model
    overthinks. `low`, `medium` and `xhigh` all stay selectable per request
