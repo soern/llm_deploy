@@ -179,17 +179,20 @@ vllm:
 
 ## Verification status
 
-- **Measured locally** (this repo's `llmtest` harness, x86 CPU host, llama.cpp
-  `b12019`, same GGUF/chat template/tool parser): coding **0.9875**/1.0
-  (Q4_K_M), agent **1.0**, toolcalling **1.0** with 100% native tool calls,
-  `reasoning_content` separated from `content`. Q8_0 control run: 0.9375
-  (run-to-run noise - no quant-related regression visible at Q4_K_M).
-- **Not yet run on the Orin itself** (board offline at recipe-writing time,
-  2026-11). The script path is identical to the working `lfm2.5-8b-a1b`
-  deploy apart from model/repo/sampling/ctx, and the shared image must be
-  >= llama.cpp v0.8.0. On first bring-up: watch `tegrastats` / `free -h`
-  during the first long prefill and confirm the
-  `offloaded N/N layers to GPU` line (start.sh warns if absent).
+- **Measured ON the Orin Nano** (JetPack 7, built via `REBUILD=1 LLAMA_CPP_REF=v0.8.0
+  ./start.sh`, board reachable at `jetson.lan:8000`, bench from the LAN host via
+  `/v1/chat/completions`; generation t/s from server-side `timings`, TTFT
+  client-side wall): **generation 34.6 tok/s** (3x 256-token runs,
+  finish=length, includes reasoning tokens), **prefill ~1280 tok/s cold**
+  (~925-token random prompts, no cache reuse), **TTFT ~740-760 ms** at 925
+  cold prompt tokens, ~100 ms first-token on a short prompt, **~240 ms when
+  the prefix cache hits** (llama.cpp auto-caches ~2/3 of a repeated prompt -
+  this is what nixclaw's steady system prompt will ride on).
+- **Measured locally on x86** (this repo's `llmtest` harness, same GGUF):
+  coding **0.9875**/1.0 (Q4_K_M), agent **1.0**, toolcalling **1.0** with
+  100% native tool calls. Q8_0 control: 0.9375 (no quant-related regression).
+- Note: the shared image tag was rebuilt past llama.cpp v0.8.0 for lfm3;
+  sibling deploys pick that up on their next start (re-smoke them once).
 
 ## Troubleshooting
 
