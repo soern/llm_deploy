@@ -1,0 +1,41 @@
+services:
+  moss-image:
+    build: .
+    image: moss-image:local
+    container_name: moss-image
+    ports:
+      - "${MOSS_IMAGE_PORT:-8002}:8000"   # same host port as qwen-image-2.1 / flux2-klein
+    ipc: host
+    # Shared 128 GB unified pool: be the OOM killer's first pick rather than
+    # the LLM or system services.
+    oom_score_adj: 500
+    environment:
+      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-OpenMOSS-Team/MOSS-Image-SFT}   # …-Base = base model
+      MODEL_REVISION: ${MODEL_REVISION:-}
+      TEXT_ENCODER_QUANT: ${TEXT_ENCODER_QUANT:-none}   # fp8 = ~8 GB less resident
+      DROP_VISION_TOWER: ${DROP_VISION_TOWER:-1}
+      NUM_INFERENCE_STEPS: ${NUM_INFERENCE_STEPS:-50}
+      GUIDANCE_SCALE: ${GUIDANCE_SCALE:-3.0}
+      UNCOND_SKIP_LAYERS: ${UNCOND_SKIP_LAYERS:-22}
+      DEFAULT_SIZE: ${DEFAULT_SIZE:-1024x1024}
+      DENOISE_MB_PER_MP: ${DENOISE_MB_PER_MP:-1500}   # estimate, tune from "Request peak" log lines
+      TILED_VAE_MB: ${TILED_VAE_MB:-1000}
+      ADMISSION_MARGIN_MB: ${ADMISSION_MARGIN_MB:-2000}
+      ADMISSION_WAIT_SECONDS: ${ADMISSION_WAIT_SECONDS:-60}
+      VAE_TILING: ${VAE_TILING:-auto}   # auto | 1 (always tiled) | 0 (never)
+      UNTILED_VAE_MB_PER_MP: ${UNTILED_VAE_MB_PER_MP:-6000}   # estimate, tune from "VAE decode peak"
+      PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: on-failure:2
+
+volumes:
+  hf-cache:
