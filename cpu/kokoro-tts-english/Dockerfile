@@ -15,7 +15,13 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 # 'kokoro' PyPI package is the REAL hexgrad/Kokoro-82M reference implementation
 # (KModel + KPipeline). Uses misaki[en] for English G2P (grapheme-to-phoneme).
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 && \
+#
+# torch must stay >= 2.6: kokoro pulls `transformers`, and transformers >= 5
+# silently disables PyTorch below 2.6 ("Disabling PyTorch because PyTorch
+# >= 2.6 is required but found ..."), which then makes KModel() die on import
+# with the misleading "CustomAlbert requires the PyTorch library but it was not
+# found". Verified working combo: torch 2.14.1+cpu + transformers 5.20.2.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.14.1 && \
     pip install --no-cache-dir \
     kokoro==0.7.16 \
     "misaki[en]" \
